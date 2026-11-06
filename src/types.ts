@@ -309,7 +309,14 @@ export type GenerarEvidenciaData = {
   ruta_pdf: string | null // out/<caso>/aprobacion.pdf (P1)
   sha256: string // sha256 of the approval content
 }
-export type CrearData = { numero_oc: string; fecha: string; idempotente: boolean; retroactiva: boolean }
+export type CrearData = {
+  numero_oc: string
+  fecha: string
+  idempotente: boolean
+  retroactiva: boolean
+  /** Additive (§11 asks for the evidence path after creation). */
+  ruta_evidencia: { txt: string; pdf: string | null }
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Control log (HU-5) — out/control.csv
@@ -389,7 +396,7 @@ export type ToolCallView = {
   duracion_ms: number
 }
 
-export type ApiError = { codigo: LlmErrorCodigo | "LIMITE_ITERACIONES" | "LIMITE_TOKENS" | "SOLICITUD_INVALIDA" | "INTERNO"; mensaje: string }
+export type ApiError = { codigo: LlmErrorCodigo | "LIMITE_ITERACIONES" | "LIMITE_TOKENS" | "LIMITE_GLOBAL" | "SOLICITUD_INVALIDA" | "INTERNO"; mensaje: string }
 
 export type ChatResponse = {
   reply: string

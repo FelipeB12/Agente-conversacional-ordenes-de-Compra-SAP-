@@ -21,4 +21,8 @@ services:
         value: "25"
       - key: MAX_TOKENS_PER_SESSION
         value: "200000"
+      - key: MAX_TOKENS_GLOBAL_PER_DAY
+        value: "2000000"
+      - key: MAX_SESSIONS
+        value: "200"
       # PORT no se declara: Render lo inyecta y src/config.ts lo lee de process.env.

@@ -1,3 +1,9 @@
+/**
+ * File-backed SAP simulator (PRD §7.4, HU-5): implements `SapAdapter` over
+ * `out/sap/ordenes.jsonl`, with sequential OC numbers from 4500000001 and idempotency
+ * per solicitud_id. Also exports `buscarOrdenCompleta`, a mock-only helper that returns
+ * the stored creation date without widening the `SapAdapter` interface.
+ */
 import { mkdir, appendFile, readFile } from "node:fs/promises"
 import { join } from "node:path"
 import { z } from "zod"
@@ -53,7 +59,17 @@ function soloDigitos(valor: string): string {
 }
 
 /**
- * File-backed SAP simulator (PRD §7.4, HU-5). Lets the agent exercise the same
+ * Mock-only lookup that also returns the stored creation date of an existing order
+ * (the `SapAdapter` interface only promises `numero_oc`). Null when none exists.
+ */
+export async function buscarOrdenCompleta(outDir: string, solicitud_id: string): Promise<{ numero_oc: string; fecha: string } | null> {
+  const lineas = await leerLineas(join(outDir, "sap", "ordenes.jsonl"))
+  const hallada = lineas.find((l) => l.orden.referencia.solicitud_id === solicitud_id)
+  return hallada ? { numero_oc: hallada.numero_oc, fecha: hallada.fecha } : null
+}
+
+/**
+ * Adapter factory. Lets the agent exercise the same
  * adapter contract a real SAP would sit behind, with state inspectable on disk.
  * Numbering is sequential from 4500000001 and idempotent per solicitud_id, mirroring
  * how a real SAP would be asked to avoid duplicate purchase orders on retries.

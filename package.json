@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Agente conversacional que prepara y crea órdenes de compra en un SAP simulado.",
+  "description": "Agente conversacional que prepara y crea \u00f3rdenes de compra en un SAP simulado.",
   "engines": {
     "node": ">=20"
   },
@@ -12,7 +12,8 @@
     "build": "vite build --config web/vite.config.ts",
     "start": "tsx src/server.ts",
     "demo": "tsx demo.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "reset": "node -e \"require('fs').rmSync('out',{recursive:true,force:true})\""
   },
   "dependencies": {
     "dotenv": "^18.0.9",

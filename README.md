@@ -38,6 +38,8 @@ npm run build && npm start   # http://localhost:3000
 | `LLM_TIMEOUT_MS` | No | `30000` | Tiempo máximo de espera por respuesta del modelo (ms). |
 | `MAX_ITERATIONS_PER_TURN` | No | `25` | Tope de llamadas al modelo por turno. |
 | `MAX_TOKENS_PER_SESSION` | No | `200000` | Tope de tokens por sesión. |
+| `MAX_TOKENS_GLOBAL_PER_DAY` | No | `2000000` | Presupuesto diario de tokens de todas las sesiones juntas (protege la clave en el link público). |
+| `MAX_SESSIONS` | No | `200` | Máximo de sesiones en memoria; se descarta la menos usada. |
 | `PORT` | No | `3000` | Puerto del servidor. Render lo asigna solo. |
 
 ## Demo sin modelo
@@ -47,6 +49,8 @@ npm install && npm run demo
 ```
 
 Ejecuta las herramientas directamente sobre los 6 casos de `fixtures/reto-03/solicitudes/`, sin clave de ningún proveedor. Limpia `out/` al inicio. Muestra por caso si la solicitud es apta, los bloqueos y confirmaciones, si es retroactiva y el número de OC o el motivo. Ejecuta `sol-001` dos veces para mostrar la idempotencia.
+
+> **Antes de probar el chat en local después de la demo:** ejecuta `npm run reset`. La demo deja creadas las OC de los 6 casos en `out/sap/ordenes.jsonl`. Si no limpias `out/`, el agente responde (correctamente, por idempotencia) que la OC ya existía y no pide confirmación.
 
 ## API
 

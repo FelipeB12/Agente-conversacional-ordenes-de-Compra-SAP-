@@ -35,6 +35,55 @@ export function hashPayload(v: unknown): string {
   return createHash("sha256").update(canonicalJson(v), "utf8").digest("hex")
 }
 
+/** Flat map of control-relevant values, keyed by dotted path (e.g. `posiciones[0].precio_unitario`). */
+export type Proyeccion = Record<string, string | number | boolean | null | undefined>
+
+function obj(v: unknown): Record<string, unknown> | undefined {
+  return typeof v === "object" && v !== null && !Array.isArray(v) ? (v as Record<string, unknown>) : undefined
+}
+
+function escalar(v: unknown): string | number | boolean | null | undefined {
+  return typeof v === "string" || typeof v === "number" || typeof v === "boolean" || v === null ? v : undefined
+}
+
+/**
+ * Extracts only the values that matter for control (who, what, how much, who approved).
+ * Accepts `unknown` so it can read a model-supplied payload loosely: anything missing or
+ * of an unexpected shape becomes `undefined` and therefore differs from the server value.
+ */
+export function proyeccionCritica(orden: unknown): Proyeccion {
+  const o = obj(orden)
+  const ref = obj(o?.referencia)
+  const prov = obj(o?.proveedor)
+  const apr = obj(o?.aprobador)
+  const pos = Array.isArray(o?.posiciones) ? (o.posiciones as unknown[]) : undefined
+  const r: Proyeccion = {
+    "referencia.solicitud_id": escalar(ref?.solicitud_id),
+    "proveedor.codigo_sap": escalar(prov?.codigo_sap),
+    "proveedor.nit": escalar(prov?.nit),
+    moneda: escalar(o?.moneda),
+    condiciones_pago: escalar(o?.condiciones_pago),
+    "aprobador.email": escalar(apr?.email),
+    "posiciones.length": pos?.length,
+  }
+  ;(pos ?? []).forEach((raw, i) => {
+    const p = obj(raw)
+    for (const k of ["numero", "cantidad", "unidad", "precio_unitario", "centro_costo", "subarea", "indicador_iva"]) {
+      r[`posiciones[${i}].${k}`] = escalar(p?.[k])
+    }
+  })
+  return r
+}
+
+/** Differences between two projections: `{campo: {servidor, recibido}}`; empty when they agree. */
+export function diferenciasProyeccion(servidor: Proyeccion, recibido: Proyeccion): Record<string, { servidor: unknown; recibido: unknown }> {
+  const d: Record<string, { servidor: unknown; recibido: unknown }> = {}
+  for (const k of new Set([...Object.keys(servidor), ...Object.keys(recibido)])) {
+    if (servidor[k] !== recibido[k]) d[k] = { servidor: servidor[k] ?? null, recibido: recibido[k] ?? null }
+  }
+  return d
+}
+
 /** Unit of measure from the quote item (or the description): hours, months, else units. */
 export function derivarUnidad(p: Paquete): "UN" | "H" | "MES" {
   const item = p.cotizacion ? /^\s*1\.\s*(.+?)\s*\|/m.exec(p.cotizacion.texto)?.[1] : undefined

@@ -1,3 +1,8 @@
+/**
+ * Audit trail (HU-5): appends one RFC-4180 row per purchase-order attempt to
+ * `<outDir>/control.csv`, writing the header on first use. Appends are serialized
+ * in-process so rows never interleave.
+ */
 import { mkdir, appendFile, stat } from "node:fs/promises"
 import { join } from "node:path"
 import type { AppendControl, ControlRow } from "../types.js"

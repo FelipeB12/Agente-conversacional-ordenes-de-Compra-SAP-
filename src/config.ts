@@ -13,6 +13,10 @@ const EnvSchema = z.object({
   LLM_TIMEOUT_MS: z.coerce.number().int().positive().default(30000),
   MAX_ITERATIONS_PER_TURN: z.coerce.number().int().positive().default(25),
   MAX_TOKENS_PER_SESSION: z.coerce.number().int().positive().default(200000),
+  /** Daily token budget across all sessions: a public link must not spend the key without limit (PRD §8). */
+  MAX_TOKENS_GLOBAL_PER_DAY: z.coerce.number().int().positive().default(2000000),
+  /** Max live in-memory sessions; the oldest is evicted beyond this. */
+  MAX_SESSIONS: z.coerce.number().int().positive().default(200),
   PORT: z.coerce.number().int().positive().default(3000),
 })
 

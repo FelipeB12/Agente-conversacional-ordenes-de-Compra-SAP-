@@ -5,13 +5,13 @@
  */
 import { appendControl } from "../control/log.js"
 import { rutas } from "../config.js"
-import { construirOrden, escribirTrazabilidad, hashPayload } from "../domain/payload.js"
+import { construirOrden, diferenciasProyeccion, escribirTrazabilidad, hashPayload, proyeccionCritica } from "../domain/payload.js"
 import { validarPaquete } from "../domain/controles.js"
 import { escribirEvidencia } from "../domain/evidencia.js"
 import { ToolFail, relativa } from "../domain/fixtures.js"
 import { cargarMaestros } from "../domain/maestros.js"
 import { leerPaquete } from "../domain/paquete.js"
-import { createMockSap } from "../sap/mock.js"
+import { buscarOrdenCompleta, createMockSap } from "../sap/mock.js"
 import {
   ToolArgs,
   type ConstruirPayloadData,
@@ -116,6 +116,14 @@ export const generar_evidencia = {
   },
 } satisfies ToolDef<typeof ToolArgs.generar_evidencia>
 
+/**
+ * Creates the PO in SAP. The model's `args.payload` is only checked, never forwarded:
+ * its critical projection (supplier, currency, terms, approver, and per-line
+ * quantities/prices/cost centre/VAT) must equal the server-rebuilt one, else PAYLOAD_ALTERADO.
+ * The order sent to SAP is ALWAYS the server-rebuilt payload. Amounts come from the tools
+ * and the model cannot alter them; cosmetic drift (accents, description text) is not a
+ * control failure, so a small model that retypes the payload imperfectly does not loop.
+ */
 export const crear = {
   description: "Crea la orden de compra en SAP simulado con el payload sin modificar; exige confirmación humana si hay confirmaciones pendientes.",
   args: ToolArgs.crear,
@@ -134,21 +142,30 @@ export const crear = {
         })
       }
       const { payload } = construirOrden(paquete, validacion, maestros)
-      if (hashPayload(args.payload) !== hashPayload(payload)) {
+      const diferencias = diferenciasProyeccion(proyeccionCritica(payload), proyeccionCritica(args.payload))
+      if (Object.keys(diferencias).length > 0) {
         await appendControl(out, fila(paquete, validacion, "rechazada"))
         throw new ToolFail({
           codigo: "PAYLOAD_ALTERADO",
           mensaje: "El payload recibido no coincide con el calculado desde las fuentes; se rechaza.",
           sugerencia: "Vuelva a llamar a oc_construir_payload y use su resultado sin modificarlo.",
+          detalle: diferencias,
         })
       }
 
       const sap = createMockSap({ outDir: out, maestrosDir: rutas(ctx.directory).maestros })
       const solicitudId = paquete.solicitud.solicitud_id
-      const existente = await sap.buscarOrdenPorReferencia(solicitudId)
+      const existente = await buscarOrdenCompleta(out, solicitudId)
       if (existente) {
         await appendControl(out, fila(paquete, validacion, "idempotente", existente.numero_oc))
-        return { numero_oc: existente.numero_oc, fecha: new Date().toISOString().slice(0, 10), idempotente: true, retroactiva: validacion.retroactiva }
+        const ev = await escribirEvidencia(ctx.directory, args.caso, paquete)
+        return {
+          numero_oc: existente.numero_oc,
+          fecha: existente.fecha,
+          idempotente: true,
+          retroactiva: validacion.retroactiva,
+          ruta_evidencia: { txt: ev.ruta, pdf: ev.ruta_pdf },
+        }
       }
 
       if (validacion.confirmaciones.length > 0 && !(args.confirmado === true && ctx.confirmacionHumana === true)) {
@@ -164,7 +181,7 @@ export const crear = {
         })
       }
 
-      await escribirEvidencia(ctx.directory, args.caso, paquete)
+      const ev = await escribirEvidencia(ctx.directory, args.caso, paquete)
       const sello = `analista (sesión ${ctx.sessionId})`
       const orden = {
         ...payload,
@@ -172,7 +189,7 @@ export const crear = {
       }
       const { numero_oc, fecha } = await sap.crearOrden(orden)
       await appendControl(out, fila(paquete, validacion, "creada", numero_oc))
-      return { numero_oc, fecha, idempotente: false, retroactiva: validacion.retroactiva }
+      return { numero_oc, fecha, idempotente: false, retroactiva: validacion.retroactiva, ruta_evidencia: { txt: ev.ruta, pdf: ev.ruta_pdf } }
     })
   },
 } satisfies ToolDef<typeof ToolArgs.crear>

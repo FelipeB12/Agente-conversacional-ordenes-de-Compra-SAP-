@@ -123,6 +123,7 @@ async function procesarCaso(
   const primero = resultado<CrearData>(await crear.execute({ caso, payload }, ctx))
   if (primero.ok) {
     console.log(`  → OC ${primero.data.numero_oc}`)
+    console.log(`  ruta_evidencia: ${JSON.stringify(primero.data.ruta_evidencia)}`)
     return { caso, resultado: "creada", oc: primero.data.numero_oc, retro: v.retroactiva, obtenido: "creada" }
   }
   if (primero.error.codigo !== "CONFIRMACION_REQUERIDA") {
@@ -135,6 +136,7 @@ async function procesarCaso(
   const segundo = resultado<CrearData>(await crear.execute({ caso, payload, confirmado: true }, ctxHumano))
   if (!segundo.ok) return fallaTecnica(caso, `crear (confirmado): ${segundo.error.codigo} — ${segundo.error.mensaje}`)
   console.log(`  → OC ${segundo.data.numero_oc} (creada tras confirmación humana)`)
+  console.log(`  ruta_evidencia: ${JSON.stringify(segundo.data.ruta_evidencia)}`)
   return {
     caso,
     resultado: "creada tras confirmación",
@@ -190,6 +192,7 @@ async function main(): Promise<void> {
     if (!r.ok) fallos.push(`idempotencia: ${r.error.codigo} — ${r.error.mensaje}`)
     else {
       console.log(`  → OC ${r.data.numero_oc} · idempotente: ${r.data.idempotente}`)
+      console.log(`  ruta_evidencia: ${JSON.stringify(r.data.ruta_evidencia)}`)
       comprobar(r.data.numero_oc === oc1 && r.data.idempotente === true, "idempotencia: número distinto o idempotente=false")
     }
   }
@@ -210,6 +213,25 @@ async function main(): Promise<void> {
         console.log(`  → rechazada: ${r.error.codigo} — ${r.error.mensaje}`)
       } else {
         fallos.push(`manipulación: se esperaba PAYLOAD_ALTERADO, obtenido ${r.ok ? "OC creada" : r.error.codigo}`)
+      }
+    }
+  }
+
+  // Cosmetic drift: only the description changes; critical values match, so it is accepted (idempotent).
+  console.log("\n== Deriva cosmética (sol-001 con descripción distinta) ==")
+  if (payload1 === undefined) fallos.push("deriva cosmética: sol-001 sin payload")
+  else {
+    const cosmetico = structuredClone(payload1)
+    const pos0 = cosmetico.posiciones[0]
+    if (pos0 === undefined) fallos.push("deriva cosmética: payload sin posiciones")
+    else {
+      pos0.descripcion = pos0.descripcion + " (texto distinto)"
+      const r = resultado<CrearData>(await crear.execute({ caso: "sol-001", payload: cosmetico }, ctx))
+      if (!r.ok) fallos.push(`deriva cosmética: ${r.error.codigo} — ${r.error.mensaje}`)
+      else {
+        console.log(`  → aceptada · OC ${r.data.numero_oc} · idempotente: ${r.data.idempotente}`)
+        console.log(`  ruta_evidencia: ${JSON.stringify(r.data.ruta_evidencia)}`)
+        comprobar(r.data.numero_oc === oc1 && r.data.idempotente === true, "deriva cosmética: debía ser idempotente con el mismo número")
       }
     }
   }
