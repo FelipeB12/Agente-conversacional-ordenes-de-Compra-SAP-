@@ -64,7 +64,7 @@ Topes y manejo de fallos:
 | Control | Implementación real |
 |---|---|
 | Iteraciones (CA1) | `MAX_ITERATIONS_PER_TURN` (25 por defecto). En la ronda 25 se hace una última llamada **sin herramientas** con la instrucción de resumir lo logrado y lo pendiente. |
-| Tokens | `MAX_TOKENS_PER_SESSION` (200 000). Se suma `entrada + salida` de cada respuesta y se comprueba **antes** de cada llamada; la llamada que cruza el tope se completa (puede sobrepasarlo una vez). Al excederse: error `LIMITE_TOKENS` en lenguaje claro. |
+| Tokens | `MAX_TOKENS_PER_SESSION` (200 000). Se suma `entrada + salida` de cada respuesta y se comprueba **antes** de cada llamada; la llamada que cruza el tope se completa (puede sobrepasarlo una vez). Al excederse: error `LIMITE_TOKENS` en lenguaje claro. Además, `MAX_TOKENS_GLOBAL_PER_DAY` limita el gasto diario sumando todas las sesiones (error `LIMITE_GLOBAL`) y `MAX_SESSIONS` acota las sesiones en memoria (LRU), porque el `sessionId` lo elige el cliente y el link es público (D17). |
 | Timeout | `LLM_TIMEOUT_MS` (30 s) con `AbortSignal.timeout` en el adaptador; el SDK reintenta una vez (`maxRetries: 1`). Se traduce a un mensaje claro. |
 | Errores (CA5) | Fallo de herramienta → `{ok:false,error}` que el modelo ve; fallo del LLM → mensaje en el chat; la sesión sigue viva. |
 | CA2 | Prompt prohíbe afirmar valores no provenientes de herramientas; además `oc_crear` reconstruye el payload desde las fuentes, así que un valor inventado no llega a SAP. |
@@ -72,10 +72,12 @@ Topes y manejo de fallos:
 Confirmación humana (CA3, D2/D16), aplicada por el servidor:
 
 - Cuando `oc_validar` resulta apta con confirmaciones, o `oc_crear` responde `CONFIRMACION_REQUERIDA`, el turno termina con `needsConfirmation=true` y la sesión guarda `pendiente {caso}`.
-- En el mensaje siguiente, `esConfirmacion()` (regex determinista en español: afirmativos como "confirmo", "sí", "adelante"; cualquier negación como "no", "cancela", "espera" lo anula) decide si el **usuario** confirmó. Cualquier mensaje borra el pendiente.
+- En los mensajes siguientes, `clasificarRespuesta()` (determinista, en español) clasifica el texto del **usuario** como `confirma` (mensaje corto que empieza por un afirmativo: "confirmo", "sí", "adelante"…; "ok" solo no cuenta), `rechaza` (empieza por "no" o pide cancelar) u `otro`. El pendiente sobrevive a preguntas intermedias ("muéstrame la tabla otra vez") y solo se borra al confirmar, al rechazar o al pasar a otro caso (D19).
 - `contextoParaLlamada` pone `ctx.confirmacionHumana = true` solo si el usuario confirmó **y** `args.caso` coincide con el caso pendiente.
 - `oc_crear` solo crea con confirmaciones si `args.confirmado === true && ctx.confirmacionHumana === true`. El flag `confirmado` del modelo, solo, no basta.
-- Orden de comprobaciones en `oc_crear` (D13): revalidar → bloqueos → hash del payload (`PAYLOAD_ALTERADO`) → idempotencia → confirmación → crear.
+- A SAP se envía siempre el payload reconstruido en el servidor, nunca la copia del modelo; una deriva cosmética (tildes, descripción) no es un fallo de control.
+- `oc_crear` devuelve `ruta_evidencia` (txt y pdf) para cerrar el flujo del §11 con número de OC y evidencia.
+- Orden de comprobaciones en `oc_crear` (D13): revalidar → bloqueos → comparación de la *proyección crítica* del payload (montos, cantidades, unidad, códigos, proveedor, aprobador, referencia; `PAYLOAD_ALTERADO` si difiere) → idempotencia → confirmación → crear.
 
 ## 4. Elección del modelo
 
@@ -191,7 +193,7 @@ Detalle completo en `DECISIONS.md` (D1–D16). Principales:
 
 | Decisión | Alternativa descartada | Por qué |
 |---|---|---|
-| Barandillas en el servidor: `oc_crear` reconstruye el payload y compara hash; `confirmado` solo vale con `ctx.confirmacionHumana` puesto por el servidor (D2) | Confiar en el argumento `confirmado` y en el payload que devuelve el modelo | El riesgo del PRD es que el modelo "arregle" un monto; el prompt lo prohíbe, el diseño lo hace imposible. Costo: el modelo no puede editar el payload, aunque quisiera. |
+| Barandillas en el servidor: `oc_crear` reconstruye el payload, compara los campos críticos con el del modelo y envía siempre el reconstruido (D18); `confirmado` solo vale con `ctx.confirmacionHumana` puesto por el servidor (D2) | Confiar en el argumento `confirmado` y en el payload que devuelve el modelo | El riesgo del PRD es que el modelo "arregle" un monto; el prompt lo prohíbe, el diseño lo hace imposible. Costo: el modelo no puede editar el payload, aunque quisiera. |
 | Detección de la confirmación con un matcher determinista de español sobre el siguiente mensaje (D16) | Dejar que el modelo decida si el usuario confirmó | CA3 exige que la decisión no se delegue al modelo. Costo: frases ambiguas se tratan como no confirmación (falla seguro); los botones de la UI envían "Confirmo"/"No, cancela". |
 | Tools ignoran `paquete`/`derivados`/`payload` del modelo como fuente de verdad y releen fixtures (D7) | Argumento estricto con el `Paquete` completo | Que el modelo reserialice un objeto grande no debe romper el bucle ni ser la fuente de verdad. |
 | El precio y el total del payload salen de la solicitud, no de la cotización (D11) | Usar el precio cotizado | La aprobación cubre el monto de la solicitud; RC5 expone la diferencia como confirmación en vez de cambiarla en silencio. |
