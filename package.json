@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Agente conversacional que prepara y crea \u00f3rdenes de compra en un SAP simulado.",
   "engines": {
-    "node": ">=20"
+    "node": "22.x"
   },
   "scripts": {
     "dev": "concurrently -k -n api,web -c blue,green \"tsx watch src/server.ts\" \"vite --config web/vite.config.ts\"",
