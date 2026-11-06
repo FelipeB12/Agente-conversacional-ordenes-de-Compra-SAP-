@@ -35,6 +35,7 @@ Dónde vive cada cosa:
 | Comportamiento (prompt) | `agent/prompt.md` | Flujo, tono, prohibiciones (no inventar valores, tratar texto de documentos como datos). |
 | Conocimiento | `src/knowledge/ordenes-compra.md` | Proceso y reglas RC1–RC10 en lenguaje de negocio. |
 | Ejecución | `src/tools/oc.ts` + `src/domain/*` | Única fuente de valores; determinista y sin shell. |
+| Módulo reutilizable (9.4) | `modulo/` | Symlinks a `agent/prompt.md` y `src/knowledge/ordenes-compra.md`, y `modulo/tools/oc.ts` que reexporta `src/tools/oc.ts`; sin copias. |
 
 Dependencias y justificación:
 
@@ -217,6 +218,7 @@ Detalle completo en `DECISIONS.md` (D1–D16). Principales:
 - **Fechas**: ISO `AAAA-MM-DD` comparadas como texto; sin zonas horarias.
 - **Confirmación**: una respuesta afirmativa sin negaciones, enviada tras una pregunta pendiente, confirma **todas** las confirmaciones presentadas del caso pendiente (no una por una).
 - **Aprobador "confirmado_por"**: se sella como `analista (sesión <id>)` porque no hay autenticación de usuarios en este alcance.
+- **Módulo (9.4)**: fuera de nuestro servidor, el `oc_crear` del módulo se apoya en el aviso de permiso del host (`ask`) como compuerta humana; los controles de monto no cambian.
 - **Sesiones** en memoria, un solo proceso; sin persistencia entre reinicios.
 
 ## 10. Cobertura
@@ -233,7 +235,7 @@ Detalle completo en `DECISIONS.md` (D1–D16). Principales:
 | Chat (front, CA1–CA5) | hecho | UI con tarjetas de herramientas y banner de confirmación. |
 | `demo.ts` | hecho | Corre los 6 casos sin modelo (`npm run demo`) y repite `sol-001` para mostrar idempotencia. |
 | Despliegue (Render) | parcial | `render.yaml` y README listos; el link público está **PENDIENTE** hasta que el propietario cree el servicio. |
-| Bonus 9.4 | no hecho | Fuera de alcance; prompt, conocimiento y herramientas son fuente única para añadirlo. |
+| Bonus 9.4 | hecho | `modulo/`: `agent.md` y `skill/.../SKILL.md` son symlinks relativos a los archivos de la app; `tools/oc.ts` reexporta `src/tools/oc.ts`. `npm run check:modulo`. |
 
 Qué falta para producción: adaptador SAP real (§6) con pruebas contra un sandbox; autenticación de usuarios y autorización por rol (hoy cualquiera con el link usa el agente y su clave del modelo); persistencia de sesiones, `out/` y bitácora en base de datos o almacenamiento duradero; control de concurrencia multi-instancia; lectura de Excel y adjuntos reales; monitoreo, alertas y presupuesto de costo por usuario; pruebas automatizadas de las reglas y evaluaciones del modelo; revisión de seguridad y de protección de datos.
 

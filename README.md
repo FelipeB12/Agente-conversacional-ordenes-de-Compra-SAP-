@@ -89,6 +89,10 @@ Esperado: payload resumido en tabla, confirmaciones con los dos valores (solicit
 
 La solución completa, con decisiones y supuestos, está en [SOLUCION.md](SOLUCION.md).
 
+## Módulo reutilizable (bonus 9.4)
+
+`modulo/` empaqueta el agente, las herramientas y el skill para otras plataformas de agentes, apuntando a los mismos archivos de la app (sin copias). Ver [modulo/README.md](modulo/README.md). Verificación: `npm run check:modulo`.
+
 ## Despliegue en Render
 
 Pasos para el propietario del repositorio:

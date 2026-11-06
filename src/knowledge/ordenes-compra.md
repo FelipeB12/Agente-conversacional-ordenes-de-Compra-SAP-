@@ -1,3 +1,7 @@
+---
+name: ordenes-compra
+description: Úsalo cuando debas validar o crear una orden de compra en SAP; contiene el proceso actual y las reglas RC1-RC10 en lenguaje de negocio.
+---
 # Conocimiento del proceso: órdenes de compra
 
 ## Proceso actual

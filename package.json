@@ -12,6 +12,7 @@
     "build": "vite build --config web/vite.config.ts",
     "start": "tsx src/server.ts",
     "demo": "tsx demo.ts",
+    "check:modulo": "tsx modulo/check.ts",
     "typecheck": "tsc --noEmit",
     "reset": "node -e \"require('fs').rmSync('out',{recursive:true,force:true})\""
   },
