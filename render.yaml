@@ -1,0 +1,24 @@
+# Render Blueprint: un único servicio web que sirve la API y la UI compilada.
+# Crear en Render: New → Blueprint → elegir el repositorio público.
+services:
+  - type: web
+    name: reto-03-agente-oc
+    runtime: node
+    plan: free
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: OPENAI_MODEL
+        value: gpt-4.1-mini
+      # Secreto: no va en el repositorio. Se pide en el dashboard al crear el Blueprint.
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: MAX_ITERATIONS_PER_TURN
+        value: "25"
+      - key: MAX_TOKENS_PER_SESSION
+        value: "200000"
+      # PORT no se declara: Render lo inyecta y src/config.ts lo lee de process.env.

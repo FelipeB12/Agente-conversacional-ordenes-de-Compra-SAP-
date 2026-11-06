@@ -4,6 +4,7 @@ node_modules/
 # Build / runtime output
 out/
 dist/
+web/dist/
 build/
 .vercel/
 
