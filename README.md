@@ -108,4 +108,4 @@ Nota: el plan gratuito de Render duerme el servicio tras un tiempo sin uso. Abri
 
 ## Licencia
 
-Este proyecto se distribuye bajo la [PolyForm Noncommercial License 1.0.0](LICENSE). Puedes usarlo, probarlo, modificarlo y compartirlo con fines no comerciales (personales, educativos o de investigación). El uso comercial no está permitido sin autorización; para ello, contacta al autor.
+Este proyecto se distribuye bajo la [PolyForm Noncommercial License 1.0.0](LICENSE). Puedes usarlo, probarlo, modificarlo y compartirlo con fines no comerciales (personales, educativos o de investigación). El uso comercial no está permitido sin autorización; para ello, contacta al autor en [beltranfelipediaz@gmail.com](mailto:beltranfelipediaz@gmail.com) o en [felipeb12.com](https://www.felipeb12.com/).
