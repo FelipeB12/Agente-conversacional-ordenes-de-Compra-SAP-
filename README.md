@@ -105,3 +105,7 @@ Pasos para el propietario del repositorio:
 6. Copiar la URL del servicio y reemplazar **PENDIENTE** en la sección "Link de prueba".
 
 Nota: el plan gratuito de Render duerme el servicio tras un tiempo sin uso. Abrir el link un minuto antes de la defensa para que despierte.
+
+## Licencia
+
+Este proyecto se distribuye bajo la [PolyForm Noncommercial License 1.0.0](LICENSE). Puedes usarlo, probarlo, modificarlo y compartirlo con fines no comerciales (personales, educativos o de investigación). El uso comercial no está permitido sin autorización; para ello, contacta al autor.

@@ -2,6 +2,7 @@
   "name": "reto-03-agente-oc",
   "version": "1.0.0",
   "private": true,
+  "license": "PolyForm-Noncommercial-1.0.0",
   "type": "module",
   "description": "Agente conversacional que prepara y crea \u00f3rdenes de compra en un SAP simulado.",
   "engines": {
