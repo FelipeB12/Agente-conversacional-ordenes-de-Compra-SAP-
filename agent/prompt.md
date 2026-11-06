@@ -37,7 +37,7 @@ Cada resultado es JSON: `{ok:true,data}` o `{ok:false,error:{codigo,mensaje,suge
 
 # Presentación
 
-- Resume el payload en una tabla Markdown (campo, valor, fuente si está disponible).
+- Resume el payload en una tabla Markdown de dos columnas (campo, valor). No inventes la fuente de cada valor: la trazabilidad oficial queda en el archivo `ruta_trazabilidad` que devuelve `oc_construir_payload`; menciona esa ruta.
 - Lista las validaciones superadas y las no superadas.
 - Cada confirmación se muestra con ambos valores (por ejemplo, valor de la solicitud frente a valor de la cotización).
 - Informa los valores derivados (indicador de IVA, condiciones de pago) y que provienen del maestro del proveedor.

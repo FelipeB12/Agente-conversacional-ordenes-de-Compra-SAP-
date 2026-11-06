@@ -4,15 +4,38 @@
  */
 import type { ToolContext } from "../types.js"
 
-const NEGACION = /(?<![\p{L}])(no|nunca|cancela\w*|cancelar|detente|detener|rechazo|rechazar|espera|aún no|todavia no|todavía no)(?![\p{L}])/iu
-const AFIRMATIVO =
-  /(?<![\p{L}])(confirmo|confirmado|confirmar|s[ií]|apruebo|aprobado|aprobar|adelante|procede|proceder|proceda|crear|cr[eé]ala|cr[eé]a|ok|de acuerdo|dale|hazlo)(?![\p{L}])/iu
+const AFIRMATIVOS = ["confirmo", "confirmado", "si", "apruebo", "adelante", "procede a crear", "procede", "creala", "crea la oc", "de acuerdo"]
+const INICIA_AFIRMATIVO = new RegExp(`^(${AFIRMATIVOS.join("|")})(?![a-z])`)
+const INICIA_NO = /^no(?![a-z])/
+const CONTIENE_RECHAZO = /(?<![a-z])(cancela\w*|cancelar|no la crees|detente)(?![a-z])/
+const MAX_PALABRAS = 12
 
-/** True for an explicit affirmative with no negation/cancel word. */
+/** Lowercase, strip accents, trim and drop trailing punctuation so matching is deterministic. */
+function normalizar(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .trim()
+    .replace(/[\s.,;:!?¡¿…]+$/u, "")
+}
+
+/**
+ * Classifies a user reply to a pending confirmation. Exists so that the decision to unlock
+ * oc_crear is a fixed rule (starts-with, short, no negation) instead of a loose keyword search
+ * that would confirm things like "no, no la crees" or a long unrelated question.
+ */
+export function clasificarRespuesta(text: string): "confirma" | "rechaza" | "otro" {
+  const t = normalizar(text)
+  if (!t) return "otro"
+  if (INICIA_NO.test(t) || CONTIENE_RECHAZO.test(t)) return "rechaza"
+  if (t.split(/\s+/).length <= MAX_PALABRAS && INICIA_AFIRMATIVO.test(t)) return "confirma"
+  return "otro"
+}
+
+/** Boolean wrapper over clasificarRespuesta, kept so callers only needing a yes/no stay simple. */
 export function esConfirmacion(text: string): boolean {
-  const t = text.trim()
-  if (!t || NEGACION.test(t)) return false
-  return AFIRMATIVO.test(t)
+  return clasificarRespuesta(text) === "confirma"
 }
 
 /** Whether a tool call may carry confirmacionHumana: user confirmed AND args.caso matches the pending case. */

@@ -10,9 +10,9 @@ import { LlmError } from "../llm/adapter.js"
 import type { LlmAdapter, LlmMessage } from "../llm/adapter.js"
 import type { Registry } from "../tools/registry.js"
 import type { ApiError, ChatResponse, ToolCallView } from "../types.js"
-import { contextoParaLlamada, esConfirmacion } from "./confirmacion.js"
+import { clasificarRespuesta, contextoParaLlamada } from "./confirmacion.js"
 import { cargarSystemPrompt } from "./prompt-loader.js"
-import { getSession } from "./session.js"
+import { getSession, presupuestoGlobalAgotado, registrarTokensGlobales } from "./session.js"
 
 export type LoopDeps = {
   llm: LlmAdapter
@@ -83,8 +83,10 @@ export async function procesarMensaje(sessionId: string, message: string, deps: 
   const directory = deps.directory ?? PROJECT_ROOT
   const session = getSession(sessionId)
   const pendienteAntes = session.pendiente
-  const usuarioConfirma = pendienteAntes !== null && esConfirmacion(message)
-  session.pendiente = null // any message resolves the previous pending state
+  const clase = clasificarRespuesta(message)
+  const usuarioConfirma = pendienteAntes !== null && clase === "confirma"
+  // Pending survives follow-up questions; it is cleared only on confirm (consumed), refusal, or a different caso.
+  if (usuarioConfirma || clase === "rechaza") session.pendiente = null
 
   const ts = () => new Date().toISOString()
   session.history.push({ role: "user", content: message })
@@ -96,8 +98,8 @@ export async function procesarMensaje(sessionId: string, message: string, deps: 
   let reply = ""
 
   const terminar = (): ChatResponse => {
-    const needsConfirmation = porConfirmar.size > 0
-    if (needsConfirmation) session.pendiente = { caso: [...porConfirmar].at(-1) as string }
+    if (porConfirmar.size > 0) session.pendiente = { caso: [...porConfirmar].at(-1) as string }
+    const needsConfirmation = session.pendiente !== null
     session.mensajes.push({
       rol: "assistant",
       texto: reply,
@@ -115,8 +117,10 @@ export async function procesarMensaje(sessionId: string, message: string, deps: 
       if (session.tokensUsados >= config.MAX_TOKENS_PER_SESSION) {
         throw Object.assign(new Error("tokens"), { limiteTokens: true })
       }
+      if (presupuestoGlobalAgotado()) throw Object.assign(new Error("global"), { limiteGlobal: true })
       const r = await deps.llm.enviar([system, ...session.history, ...extra], conTools ? deps.registry.specs : [])
       session.tokensUsados += r.uso.entrada + r.uso.salida
+      registrarTokensGlobales(r.uso.entrada + r.uso.salida)
       return r
     }
 
@@ -145,11 +149,15 @@ export async function procesarMensaje(sessionId: string, message: string, deps: 
         await registrarLog(directory, { ts: ts(), sessionId, tool: tc.name, args: args ?? tc.argumentos, ok, resumen, duracion_ms })
 
         const caso = esObj(args) && typeof args.caso === "string" ? args.caso : undefined
+        if (caso && session.pendiente && caso !== session.pendiente.caso) session.pendiente = null
         if (caso && esObj(resultado)) {
           const d = esObj(resultado.data) ? resultado.data : {}
           const e = esObj(resultado.error) ? resultado.error : {}
           if (tc.name === "oc_validar" && ok && d.apta === true && Array.isArray(d.confirmaciones) && d.confirmaciones.length > 0) porConfirmar.add(caso)
-          else if (tc.name === "oc_crear" && ok) porConfirmar.delete(caso)
+          else if (tc.name === "oc_crear" && ok) {
+            porConfirmar.delete(caso)
+            if (session.pendiente?.caso === caso) session.pendiente = null
+          }
           else if (tc.name === "oc_crear" && e.codigo === "CONFIRMACION_REQUERIDA") porConfirmar.add(caso)
         }
         resultados.push({ role: "tool", toolCallId: tc.id, name: tc.name, content: raw })
@@ -160,7 +168,9 @@ export async function procesarMensaje(sessionId: string, message: string, deps: 
     reply = texto ?? ""
     session.history.push({ role: "assistant", content: reply })
   } catch (e) {
-    if (e instanceof Error && "limiteTokens" in e) {
+    if (e instanceof Error && "limiteGlobal" in e) {
+      error = { codigo: "LIMITE_GLOBAL", mensaje: "El servicio alcanzó su límite diario de uso. Tu sesión sigue activa; vuelve a intentarlo mañana." }
+    } else if (e instanceof Error && "limiteTokens" in e) {
       error = { codigo: "LIMITE_TOKENS", mensaje: "Esta sesión alcanzó el límite de uso de la conversación. Inicia una sesión nueva para continuar." }
     } else {
       error = mensajeError(e)
