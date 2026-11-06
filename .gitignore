@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+
+# Build / runtime output
+out/
+dist/
+build/
+.vercel/
+
+# Environment variables (never commit secrets)
+.env
+.env.local
+.env.*.local
+
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+bun-debug.log*
+
+# Caches
+.cache/
+*.tsbuildinfo
+coverage/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
