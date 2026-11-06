@@ -234,7 +234,7 @@ Detalle completo en `DECISIONS.md` (D1–D16). Principales:
 | Contrato de herramientas | parcial | Cinco de las herramientas del PRD hechas. **`oc_leer_excel` (P1 opcional): no hecho**; las solicitudes entran como `solicitud.json`. |
 | Chat (front, CA1–CA5) | hecho | UI con tarjetas de herramientas y banner de confirmación. |
 | `demo.ts` | hecho | Corre los 6 casos sin modelo (`npm run demo`) y repite `sol-001` para mostrar idempotencia. |
-| Despliegue (Render) | parcial | `render.yaml` y README listos; el link público está **PENDIENTE** hasta que el propietario cree el servicio. |
+| Despliegue (Render) | hecho | Web service en Render desde `render.yaml`: https://agente-conversacional-ordenes-de-compra-sdqb.onrender.com (`/api/health` OK, chat verificado con sol-002 bloqueada y flujo §11). |
 | Bonus 9.4 | hecho | `modulo/`: `agent.md` y `skill/.../SKILL.md` son symlinks relativos a los archivos de la app; `tools/oc.ts` reexporta `src/tools/oc.ts`. `npm run check:modulo`. |
 
 Qué falta para producción: adaptador SAP real (§6) con pruebas contra un sandbox; autenticación de usuarios y autorización por rol (hoy cualquiera con el link usa el agente y su clave del modelo); persistencia de sesiones, `out/` y bitácora en base de datos o almacenamiento duradero; control de concurrencia multi-instancia; lectura de Excel y adjuntos reales; monitoreo, alertas y presupuesto de costo por usuario; pruebas automatizadas de las reglas y evaluaciones del modelo; revisión de seguridad y de protección de datos.

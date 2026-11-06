@@ -4,7 +4,7 @@ Agente de chat que lee una solicitud de compra con su cotización y aprobación,
 
 ## Link de prueba
 
-**PENDIENTE**
+**https://agente-conversacional-ordenes-de-compra-sdqb.onrender.com**  (público, sin clave de acceso). Plan gratuito de Render: si estuvo inactivo, la primera carga tarda ~1 minuto.
 
 El link es público; no requiere clave de acceso.
 
@@ -102,7 +102,7 @@ Pasos para el propietario del repositorio:
 3. Seleccionar el repositorio. Render leerá `render.yaml`.
 4. Cuando lo pida, ingresar `OPENAI_API_KEY`.
 5. **Apply** y esperar el primer despliegue.
-6. Copiar la URL del servicio y reemplazar **PENDIENTE** en la sección "Link de prueba".
+6. Copiar la URL del servicio en la sección "Link de prueba".
 
 Nota: el plan gratuito de Render duerme el servicio tras un tiempo sin uso. Abrir el link un minuto antes de la defensa para que despierte.
 
